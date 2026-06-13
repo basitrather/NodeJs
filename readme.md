@@ -1,0 +1,1 @@
+This repo is related my NodeJs learning and the things i have learned from it. So i am keeping track of it and it might help the upcoming devs to learn from it, as i will keep it simple and easy to understand
