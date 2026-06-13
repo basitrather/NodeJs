@@ -1,5 +1,9 @@
-// Using js core modules
+// Using Node.js core modules
 const fs = require('fs'); //Importing the FileSystem module
+const http = require('http');
+
+////////////////////////
+// Files
 
 // Sync version of file system:-
 
@@ -23,3 +27,17 @@ fs.readFile('./txt/start.txt', 'utf-8', (err, data) => {
   });
 });
 console.log('I ran first:)'); // Logs first :/
+
+////////////////////////
+
+// SERVER
+
+// Creating a simple server
+const server = http.createServer((req, res) => {
+  res.end('Hello, Welcome to the server');
+}); // Created a server using http module and stored the server in a variable
+
+//Now listening to the server or startint it
+server.listen('8000', '127.0.0.1', () => {
+  console.log('Hello the server started on localHost');
+}); //First one is port and second is localHost address
