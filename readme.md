@@ -2,6 +2,8 @@ This repo is related my NodeJs learning and the things i have learned from it. S
 
 # Node.js Learning Progress
 
+> Course: [Node.js, Express, MongoDB Bootcamp](https://www.udemy.com/course/nodejs-express-mongodb-bootcamp/) by Jonas Schmedtmann
+
 ---
 
 ## 📅 Session 1
@@ -113,3 +115,150 @@ const server = http.createServer((req, res) => {
 | 500  | Server Error |
 
 ---
+
+## 📅 Session 2
+
+### 8. HTML Templating
+
+Instead of hardcoding HTML in `res.end()`, use template files with placeholders that get replaced with real data dynamically.
+
+**Placeholders in HTML:**
+
+```html
+<h1>{%NAME%}</h1>
+<p>Price: {%PRICE%}</p>
+```
+
+**Replacing placeholders in Node:**
+
+```js
+// Read templates once at startup (outside server)
+const templateOverview = fs.readFileSync('./templates/template-overview.html', 'utf-8');
+const templateCard = fs.readFileSync('./templates/template-card.html', 'utf-8');
+const templateProduct = fs.readFileSync('./templates/template-product.html', 'utf-8');
+
+// Replace function
+const replaceTemplate = (template, product) => {
+  let output = template.replace(/{%NAME%}/g, product.productName);
+  output = output.replace(/{%PRICE%}/g, product.price);
+  // /g flag = replace ALL occurrences not just first
+  if (!product.organic) output = output.replace(/{%NOT_ORGANIC%}/g, 'not-organic');
+  return output;
+};
+
+// Generate all cards using map + join
+const cardsHTML = dataObj.map((ele) => replaceTemplate(templateCard, ele)).join('');
+const output = templateOverview.replace('{%CARD%}', cardsHTML);
+res.end(output);
+```
+
+- `.map()` — transforms array into new array (use over `.forEach()` when you need a new array)
+- `.join('')` — combines array items into a single string
+- Read templates **outside** the server so they're not re-read on every request
+
+### 9. URL Parsing & Query Strings
+
+```js
+const url = require('url');
+
+const { query, pathname } = url.parse(req.url, true);
+// pathname = '/product'
+// query = { id: '0' }
+
+// Look up specific product
+const product = dataObj[query.id];
+```
+
+- `pathname` — the path without query string
+- `query` — query parameters as a JS object
+- Always handle case where data doesn't exist (defensive programming):
+
+```js
+if (!product) {
+  res.writeHead(404, { 'Content-Type': 'text/html' });
+  return res.end('<h1>Product not found</h1>');
+}
+```
+
+### 10. Own Modules (`module.exports` & `require`)
+
+Split code into separate files for reusability, maintainability and readability.
+
+**Exporting (replaceTemplate.js):**
+
+```js
+module.exports = (template, product) => {
+  // function code here
+};
+```
+
+**Importing (index.js):**
+
+```js
+const replaceTemplate = require('./modules/replaceTemplate');
+```
+
+**How Node resolves `require()`:**
+
+1. Starts with `./` or `../` → looks for your own file
+2. No `./` → checks if it's a core module (`fs`, `http` etc)
+3. Not a core module → looks in `node_modules` (third party packages)
+
+### 11. NPM & `package.json`
+
+```bash
+npm init          # creates package.json
+npm install       # installs all dependencies from package.json
+```
+
+**`package.json`** — identity card of your project, tracks all dependencies.
+**`node_modules`** — where installed packages live. Always add to `.gitignore`.
+**`package-lock.json`** — locks exact versions. Never edit manually.
+
+### 12. Types of Packages
+
+```bash
+npm install express          # regular dependency (needed in production)
+npm install nodemon --save-dev  # dev dependency (only needed in development)
+```
+
+- **`dependencies`** — packages app needs to run in production
+- **`devDependencies`** — packages only needed during development, not installed in production
+
+**Nodemon** — watches files and auto-restarts server on save. Add to scripts:
+
+```json
+"scripts": {
+    "start": "nodemon index.js"
+}
+```
+
+```bash
+npm start       # works (start is a reserved script name)
+npm run start   # also works
+npm run dev     # must use 'run' for custom script names
+```
+
+### 13. Package Versioning
+
+```
+1  .  2  .  3
+↑     ↑     ↑
+MAJOR MINOR PATCH
+
+MAJOR → breaking changes, not backward compatible
+MINOR → new features, backward compatible
+PATCH → bug fixes only
+```
+
+**Version symbols in `package.json`:**
+
+```
+^1.2.3  →  accept latest MINOR and PATCH (most common)
+~1.2.3  →  accept latest PATCH only
+1.2.3   →  exact version only
+```
+
+---
+
+_More sessions coming soon..._
