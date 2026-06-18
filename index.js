@@ -3,6 +3,7 @@ const fs = require('fs'); //Importing the FileSystem module
 const http = require('http');
 const path = require('path');
 const url = require('url');
+const EventEmitter = require('events');
 const replaceTemplate = require('./modules/replaceTemplate');
 
 ////////////////////////
@@ -114,3 +115,5 @@ const nodeFarmServer = http.createServer((req, res) => {
 nodeFarmServer.listen(5000, '127.0.0.1', () => {
   console.log('Hello the Node farm server started.');
 });
+
+//Streams

@@ -261,4 +261,254 @@ PATCH → bug fixes only
 
 ---
 
+## 📅 Session 3
+
+### 14. How the Web Works
+
+```
+You (Client/Browser)
+        |
+        | 1. DNS Lookup — domain name → IP address
+        | 2. TCP/IP Connection (handshake)
+        | 3. HTTP Request sent
+        ↓
+     Server
+        | 4. Server processes request
+        | 5. HTTP Response sent back
+        ↓
+You (Client/Browser)
+        | 6. Browser renders HTML
+        | 7. More requests sent for CSS/JS/images
+        | 8. Page fully loads
+```
+
+- **DNS** — converts domain names to IP addresses (like a phone book)
+- **TCP/IP** — protocol governing how data travels across the internet
+- **HTTP** — language client and server use to communicate
+- **HTTPS** — HTTP + TLS (Transport Layer Security) encryption, protects against man-in-the-middle attacks
+
+### 15. HTTP in Action
+
+**HTTP Request structure:**
+
+```
+GET /overview HTTP/1.1          ← method + path + version
+Host: www.example.com           ← headers
+User-Agent: Mozilla/5.0
+                                 ← body (only for POST/PUT)
+```
+
+**HTTP Response structure:**
+
+```
+HTTP/1.1 200 OK                 ← version + status code + message
+Content-Type: text/html         ← headers
+
+<html>...</html>                ← body
+```
+
+**HTTP Methods:**
+| Method | Purpose |
+|--------|---------|
+| GET | Retrieve data |
+| POST | Send/create data |
+| PUT | Update data (whole) |
+| PATCH | Update data (partial) |
+| DELETE | Delete data |
+
+### 16. Frontend vs Backend
+
+|            | Frontend         | Backend                  |
+| ---------- | ---------------- | ------------------------ |
+| Runs on    | Browser          | Server                   |
+| Tech       | HTML, CSS, JS    | Node.js, Python, PHP etc |
+| Deals with | UI, interactions | Business logic, DB, APIs |
+
+### 17. Static vs Dynamic vs API
+
+| Type    | Has Server? | Has Database? | What it sends?                                 |
+| ------- | ----------- | ------------- | ---------------------------------------------- |
+| Static  | ❌          | ❌            | Pre-built HTML                                 |
+| Dynamic | ✅          | ✅            | Server-generated HTML                          |
+| API     | ✅          | ✅            | JSON data (consumable by web, mobile, IoT etc) |
+
+---
+
+### 18. Node, V8, Libuv and C++
+
+```
+Your JavaScript Code
+        ↓
+┌─────────────────────────────┐
+│         NODE.JS             │
+│  ┌──────────┐ ┌──────────┐ │
+│  │    V8    │ │  LIBUV   │ │
+│  │(JS + C++)│ │  (C++)   │ │
+│  └──────────┘ └──────────┘ │
+│  + other C++ libs            │
+│  (crypto, zlib, http_parser) │
+└─────────────────────────────┘
+        ↓
+   Machine Code
+```
+
+- **V8** — compiles JS into machine code
+- **Libuv** — gives Node async, non-blocking I/O; handles event loop & thread pool
+  > V8 runs your JavaScript, Libuv gives it superpowers (async I/O, event loop), together they make Node.js.
+
+### 19. Processes, Threads & Thread Pool
+
+- **Process** — a running instance of a program (e.g. `node index.js`)
+- **Thread** — a worker inside the process; Node's main thread runs one thing at a time ("single-threaded")
+- **Thread Pool** — background threads (managed by libuv) that handle heavy tasks without blocking the main thread
+
+```
+Main Thread (Event Loop)
+        |
+        | heavy task (file read, crypto, compression)
+        ↓
+┌─────────────────────────┐
+│ Thread Pool: T1 T2 T3 T4 │  ← 4 threads by default (max 128)
+└─────────────────────────┘
+        |
+        | task done → callback → event loop
+        ↓
+Main Thread continues
+```
+
+```js
+process.env.UV_THREADPOOL_SIZE = 8; // increase thread pool size
+```
+
+| Goes to Thread Pool | Stays on Main Thread |
+| ------------------- | -------------------- |
+| File system ops     | Network requests     |
+| Crypto              | Regular JS code      |
+| Compression (zlib)  | Timers               |
+
+### 20. The Event Loop (Phases)
+
+```
+┌─────────────────────────────────┐
+│  1. TIMERS (setTimeout/Interval) │
+│  2. I/O CALLBACKS                │
+│  3. IDLE, PREPARE (internal)     │
+│  4. POLL (retrieve I/O events)   │
+│  5. CHECK (setImmediate)         │
+│  6. CLOSE CALLBACKS              │
+│  → loops back to start           │
+└─────────────────────────────────┘
+```
+
+- `process.nextTick()` and Promise callbacks run **before** every phase (highest priority)
+- Synchronous code always runs first, then microtasks (Promises), then event loop phases
+
+**Execution order example:**
+
+```js
+console.log('1 - start'); // sync
+setTimeout(() => console.log('4 - timer'), 0); // timers phase
+setImmediate(() => console.log('3 - immediate')); // check phase
+Promise.resolve().then(() => console.log('2 - promise')); // microtask
+console.log('5 - end'); // sync
+
+// Output: 1 - start, 5 - end, 2 - promise, 3 - immediate, 4 - timer
+```
+
+- **Inside an I/O callback**, `setImmediate` always runs before `setTimeout`
+
+### 21. Events & Event-Driven Architecture
+
+Node's core modules (`http`, `fs`, streams) are built on this pattern: **emitter** fires an **event**, a **listener** catches it and runs a **callback**.
+
+```js
+const EventEmitter = require('events');
+const myEmitter = new EventEmitter();
+
+// Listener (set up BEFORE emitting)
+myEmitter.on('newSale', (stock) => {
+  console.log(`Remaining stock: ${stock}`);
+});
+
+// Emitter
+myEmitter.emit('newSale', 9);
+```
+
+- `.on()` — runs every time the event is emitted
+- `.once()` — runs only the first time, then removes itself
+- Multiple listeners can listen to the same event
+- Listeners must be set up **before** the event is emitted
+
+```js
+// Under the hood, http.createServer is event-driven:
+const server = http.createServer();
+server.on('request', (req, res) => res.end('Hello!'));
+```
+
+### 22. Streams
+
+Instead of reading/writing an entire file before responding (slow, memory-heavy), streams process data in **small chunks**, sending each chunk as soon as it's ready.
+
+**Four types of streams:**
+| Type | Description | Example |
+|------|-------------|---------|
+| Readable | Read data chunk by chunk | `fs.createReadStream()` |
+| Writable | Write data chunk by chunk | `fs.createWriteStream()` |
+| Duplex | Both readable and writable | Network sockets |
+| Transform | Duplex that transforms data | Compression (zlib) |
+
+**Readable stream events:**
+
+```js
+const readable = fs.createReadStream('./big-file.txt', 'utf-8');
+
+readable.on('data', (chunk) => res.write(chunk)); // fires per chunk
+readable.on('end', () => res.end()); // fires when done
+readable.on('error', (err) => console.log(err)); // fires on error
+```
+
+**Piping — solves the backpressure problem (matches read/write speed automatically):**
+
+```js
+const readable = fs.createReadStream('./big-file.txt');
+readable.pipe(res); // reads & writes chunks, no manual event handling needed
+```
+
+### 23. How Requiring Modules Really Works
+
+When you call `require('./myModule')`, Node does the following:
+
+1. **Resolving** — figures out exact file path
+2. **Loading** — loads file content as a string
+3. **Wrapping** — wraps your code in a function:
+
+```js
+(function (exports, require, module, __filename, __dirname) {
+  // your code lives here
+});
+```
+
+This is why `require`, `module`, `exports`, `__filename`, `__dirname` are available in every file without importing them — they're parameters of this wrapper.
+
+4. **Evaluating** — runs the wrapped function
+5. **Caching** — once required, Node **caches** the module. Requiring it again elsewhere returns the cached result instead of re-running the file:
+
+```js
+// file1.js
+console.log('Runs only once!');
+module.exports = 'hello';
+
+const a = require('./file1'); // prints "Runs only once!"
+const b = require('./file1'); // nothing prints — cached
+```
+
+**Useful hidden variables:**
+
+```js
+console.log(__filename); // full path of current file
+console.log(__dirname); // full path of current directory (avoids path bugs)
+```
+
+---
+
 _More sessions coming soon..._
